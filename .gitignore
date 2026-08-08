@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Django collectstatic output
+staticfiles/
+*$py.class
+
 # C extensions
 *.so
 
