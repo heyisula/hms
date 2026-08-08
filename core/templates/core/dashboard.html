@@ -1,0 +1,275 @@
+{% extends "core/base.html" %}
+
+{% block title %}Dashboard - Meridian Health{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-10">
+    
+    <!-- Greeting -->
+    <div class="animate-enter flex justify-between items-end">
+        <div>
+            <h1 class="text-[2rem] font-bold tracking-tight text-[#1C1C1E]">Overview</h1>
+            <p class="text-[0.95rem] font-medium text-[#8E8E93] mt-1">{{ today|date:"l, F j, Y" }}</p>
+        </div>
+        <div class="hidden sm:flex gap-3">
+            <a href="{% url 'admin:core_appointment_add' %}" class="btn-primary px-5 py-2.5 text-sm flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                New Appointment
+            </a>
+        </div>
+    </div>
+
+    <!-- Stat Tiles -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <div class="liquid-glass liquid-glass-hoverable p-6 animate-enter delay-100">
+            <div class="flex justify-between items-start mb-3">
+                <span class="text-[0.9rem] font-medium text-[#8E8E93]">Total Patients</span>
+                <span class="text-xs font-semibold text-[#0A84FF] flex items-center gap-0.5 bg-[#0A84FF]/10 px-2 py-1 rounded-full">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                    Live
+                </span>
+            </div>
+            <div class="text-[2.5rem] font-bold text-[#1C1C1E] tracking-tight leading-none">{{ total_patients }}</div>
+        </div>
+
+        <div class="liquid-glass liquid-glass-hoverable p-6 animate-enter delay-200">
+            <div class="flex justify-between items-start mb-3">
+                <span class="text-[0.9rem] font-medium text-[#8E8E93]">Today's Appts</span>
+                <span class="text-xs font-semibold text-[#8E8E93] flex items-center gap-0.5 bg-black/5 px-2 py-1 rounded-full">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/></svg>
+                    Live
+                </span>
+            </div>
+            <div class="text-[2.5rem] font-bold text-[#1C1C1E] tracking-tight leading-none">{{ todays_appointments }}</div>
+        </div>
+
+        <div class="liquid-glass liquid-glass-hoverable p-6 animate-enter delay-300">
+            <div class="flex justify-between items-start mb-3">
+                <span class="text-[0.9rem] font-medium text-[#8E8E93]">Active Doctors</span>
+                <span class="text-xs font-semibold text-[#0A84FF] flex items-center gap-0.5 bg-[#0A84FF]/10 px-2 py-1 rounded-full">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+                    Live
+                </span>
+            </div>
+            <div class="text-[2.5rem] font-bold text-[#1C1C1E] tracking-tight leading-none">{{ active_doctors }}</div>
+        </div>
+    </div>
+
+    <!-- Charts Row 1 -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Line Chart -->
+        <div class="liquid-glass p-7 lg:col-span-2 animate-enter delay-400">
+            <h2 class="text-lg font-semibold text-[#1C1C1E] mb-6 tracking-tight">Appointments (Last 7 Days)</h2>
+            <div class="relative h-[22rem] w-full">
+                <canvas id="appointmentsChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Donut Chart -->
+        <div class="liquid-glass p-7 lg:col-span-1 animate-enter delay-500">
+            <h2 class="text-lg font-semibold text-[#1C1C1E] mb-6 tracking-tight">Status Breakdown</h2>
+            <div class="relative h-[18rem] w-full flex justify-center mt-4">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row 2 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Blood Group Bar Chart -->
+        <div class="liquid-glass p-7 animate-enter delay-600">
+            <h2 class="text-lg font-semibold text-[#1C1C1E] mb-6 tracking-tight">Patient Demographics (Blood Group)</h2>
+            <div class="relative h-[18rem] w-full">
+                <canvas id="bloodGroupChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Doctors by Dept Horizontal Bar Chart -->
+        <div class="liquid-glass p-7 animate-enter delay-700">
+            <h2 class="text-lg font-semibold text-[#1C1C1E] mb-6 tracking-tight">Staff Distribution (by Department)</h2>
+            <div class="relative h-[18rem] w-full">
+                <canvas id="deptChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    Chart.defaults.font.family = "'Inter', -apple-system, sans-serif";
+    Chart.defaults.color = '#8E8E93';
+
+    // Shared Tooltip Config
+    const commonTooltip = {
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#1C1C1E',
+        bodyColor: '#1C1C1E',
+        borderColor: 'rgba(0,0,0,0.08)',
+        borderWidth: 1,
+        padding: 12,
+        cornerRadius: 12,
+        displayColors: false,
+        titleFont: { size: 13, weight: '600' },
+        bodyFont: { size: 14, weight: '500' }
+    };
+
+    // Progressive Draw Plugin
+    const drawClipPlugin = {
+        id: 'drawClipPlugin',
+        beforeDatasetsDraw(chart) {
+            if (chart.config.type !== 'line') return;
+            const progress = chart._drawProgress !== undefined ? chart._drawProgress : 1;
+            const ctx = chart.ctx;
+            const { chartArea } = chart;
+            if (chartArea) {
+                ctx.save();
+                ctx.beginPath();
+                // Clip width based on progress
+                ctx.rect(chartArea.left, chartArea.top - 20, chartArea.width * progress, chartArea.height + 40);
+                ctx.clip();
+            }
+        },
+        afterDatasetsDraw(chart) {
+            if (chart.config.type !== 'line') return;
+            chart.ctx.restore();
+        }
+    };
+    Chart.register(drawClipPlugin);
+
+    // 1. Line Chart
+    const ctxAppt = document.getElementById('appointmentsChart').getContext('2d');
+    
+    new Chart(ctxAppt, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Appointments',
+                data: {{ chart_data|safe }},
+                borderColor: '#0A84FF',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.45,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointBackgroundColor: '#0A84FF',
+                borderCapStyle: 'round',
+                backgroundColor: 'rgba(10, 132, 255, 0)' // Initial state
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: {
+                duration: 1600,
+                easing: 'easeOutQuart',
+                onProgress: function(animation) {
+                    const chart = animation.chart;
+                    const progress = animation.currentStep / animation.numSteps;
+                    chart._drawProgress = progress;
+                    
+                    // Fade in gradient after 40% progress
+                    let fillAlpha = 0;
+                    if (progress > 0.4) {
+                        fillAlpha = (progress - 0.4) / 0.6;
+                    }
+                    const gradientLine = chart.ctx.createLinearGradient(0, 0, 0, 350);
+                    gradientLine.addColorStop(0, `rgba(10, 132, 255, ${0.3 * fillAlpha})`);
+                    gradientLine.addColorStop(1, 'rgba(10, 132, 255, 0)');
+                    chart.data.datasets[0].backgroundColor = gradientLine;
+                },
+                onComplete: function(animation) {
+                    animation.chart._drawProgress = 1;
+                }
+            },
+            plugins: { legend: { display: false }, tooltip: commonTooltip },
+            interaction: { intersect: false, mode: 'index' },
+            scales: {
+                x: { grid: { display: false, drawBorder: false }, ticks: { padding: 10, font: { weight: '500' } } },
+                y: { grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false, tickLength: 0 }, beginAtZero: true, ticks: { padding: 10, maxTicksLimit: 6, font: { weight: '500' }, precision: 0 } }
+            }
+        }
+    });
+
+    // 2. Donut Chart
+    const ctxStatus = document.getElementById('statusChart').getContext('2d');
+    new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+            labels: ['Completed', 'Scheduled', 'Cancelled'],
+            datasets: [{
+                data: [{{ status_completed }}, {{ status_scheduled }}, {{ status_cancelled }}],
+                backgroundColor: ['#0A84FF', 'rgba(10, 132, 255, 0.25)', 'rgba(28, 28, 30, 0.08)'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '78%',
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, padding: 24, font: { size: 13, weight: '500' }, color: '#1C1C1E' } },
+                tooltip: commonTooltip
+            }
+        }
+    });
+
+    // 3. Bar Chart (Blood Group)
+    const ctxBlood = document.getElementById('bloodGroupChart').getContext('2d');
+    new Chart(ctxBlood, {
+        type: 'bar',
+        data: {
+            labels: {{ bg_labels|safe }},
+            datasets: [{
+                label: 'Patients',
+                data: {{ bg_data|safe }},
+                backgroundColor: '#0A84FF',
+                borderRadius: 6,
+                barPercentage: 0.6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: commonTooltip },
+            scales: {
+                x: { grid: { display: false, drawBorder: false }, ticks: { font: { weight: '500' } } },
+                y: { grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false, tickLength: 0 }, beginAtZero: true, ticks: { maxTicksLimit: 5, font: { weight: '500' }, precision: 0 } }
+            }
+        }
+    });
+
+    // 4. Horizontal Bar Chart (Doctors by Dept)
+    const ctxDept = document.getElementById('deptChart').getContext('2d');
+    new Chart(ctxDept, {
+        type: 'bar',
+        data: {
+            labels: {{ dept_labels|safe }},
+            datasets: [{
+                label: 'Doctors',
+                data: {{ dept_data|safe }},
+                backgroundColor: 'rgba(10, 132, 255, 0.25)',
+                hoverBackgroundColor: '#0A84FF',
+                borderRadius: 6,
+                barPercentage: 0.7
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: commonTooltip },
+            scales: {
+                x: { grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false, tickLength: 0 }, beginAtZero: true, ticks: { maxTicksLimit: 5, font: { weight: '500' }, precision: 0 } },
+                y: { grid: { display: false, drawBorder: false }, ticks: { font: { weight: '500' } } }
+            }
+        }
+    });
+</script>
+{% endblock %}

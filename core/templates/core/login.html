@@ -1,0 +1,47 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Sign In - Meridian Health{% endblock %}
+
+{% block content %}
+<div class="min-h-[85vh] flex items-center justify-center">
+    
+    <!-- Glass Card -->
+    <div class="liquid-glass w-full max-w-md p-10 animate-enter">
+        
+        <div class="flex flex-col items-center mb-10">
+            <div class="w-14 h-14 text-[#0A84FF] mb-5">
+                <img src="{% static 'core/img/logo.svg' %}" alt="Logo" class="w-full h-full">
+            </div>
+            <h1 class="text-[1.7rem] font-bold tracking-tight text-[#1C1C1E]">Welcome back</h1>
+            <p class="text-[0.95rem] text-[#8E8E93] mt-1.5 font-medium">Sign in to your account</p>
+        </div>
+
+        {% if form.errors %}
+        <div class="bg-red-50/50 backdrop-blur-sm text-red-500 text-sm p-4 rounded-xl mb-6 border border-red-100 font-medium">
+            Invalid username or password.
+        </div>
+        {% endif %}
+
+        <form method="post" class="flex flex-col gap-5">
+            {% csrf_token %}
+            
+            <div class="floating-input-group delay-100 animate-enter">
+                <input type="text" name="username" id="id_username" placeholder=" " required autofocus>
+                <label for="id_username">Username</label>
+            </div>
+
+            <div class="floating-input-group delay-200 animate-enter">
+                <input type="password" name="password" id="id_password" placeholder=" " required>
+                <label for="id_password">Password</label>
+            </div>
+
+            <button type="submit" class="btn-primary w-full py-3.5 mt-3 delay-300 animate-enter text-[15px]">
+                Sign in
+            </button>
+        </form>
+
+    </div>
+
+</div>
+{% endblock %}
